@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/bluesky-social/indigo/mst"
-	"github.com/vylet-app/go/generated/atproto"
 	"github.com/vylet-app/go/generated/vylet"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
@@ -21,13 +20,24 @@ func main() {
 
 	if err := genCfg.WriteMapEncodersToFile("generated/vylet/cbor_gen.go", "vylet",
 		vylet.ActorProfile{},
+		vylet.FeedComment{},
+		vylet.FeedLike{},
+		vylet.FeedPost{},
+		vylet.GraphFollow{},
+		vylet.RichtextFacet{},
+		vylet.RichtextFacet_ByteSlice{},
+		vylet.RichtextFacet_Link{},
+		vylet.RichtextFacet_Mention{},
+		vylet.MediaImages{},
+		vylet.MediaImages_Image{},
+		vylet.MediaDefs_AspectRatio{},
 	); err != nil {
 		panic(err)
 	}
 
-	if err := genCfg.WriteMapEncodersToFile("generated/atproto/cbor_gen.go", "atproto",
-		atproto.RepoStrongRef{},
-	); err != nil {
-		panic(err)
-	}
+	// if err := genCfg.WriteMapEncodersToFile("generated/atproto/cbor_gen.go", "atproto",
+	// 	atproto.RepoStrongRef{},
+	// ); err != nil {
+	// 	panic(err)
+	// }
 }
