@@ -2,13 +2,13 @@
   {
     "package": "vylet",
     "prefix": "app.vylet",
-    "outdir": "api/vylet",
-    "import": "github.com/vylet-app/go/api/vylet"
+    "outdir": "generated/vylet",
+    "import": "github.com/vylet-app/go/generated/vylet"
   },
   {
     "package": "atproto",
     "prefix": "com.atproto",
-    "outdir": "api/atproto",
+    "outdir": "generated/atproto",
     "import": "github.com/bluesky-social/indigo/api/atproto"
   }
 ]

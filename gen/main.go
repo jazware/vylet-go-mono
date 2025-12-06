@@ -3,9 +3,9 @@ package main
 import (
 	"reflect"
 
-	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/mst"
-	"github.com/vylet-app/go/api/vylet"
+	"github.com/vylet-app/go/generated/atproto"
+	"github.com/vylet-app/go/generated/vylet"
 	cbg "github.com/whyrusleeping/cbor-gen"
 )
 
@@ -19,13 +19,13 @@ func main() {
 		MaxStringLength: 1_000_000,
 	}
 
-	if err := genCfg.WriteMapEncodersToFile("api/vylet/cbor_gen.go", "vylet",
+	if err := genCfg.WriteMapEncodersToFile("generated/vylet/cbor_gen.go", "vylet",
 		vylet.ActorProfile{},
 	); err != nil {
 		panic(err)
 	}
 
-	if err := genCfg.WriteMapEncodersToFile("api/atproto/cbor_gen.go", "atproto",
+	if err := genCfg.WriteMapEncodersToFile("generated/atproto/cbor_gen.go", "atproto",
 		atproto.RepoStrongRef{},
 	); err != nil {
 		panic(err)
