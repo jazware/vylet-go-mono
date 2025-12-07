@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package vyletdatabase;
+option go_package = "./;vyletdatabase";
+
+import "buf/validate/validate.proto";
+
+import "google/protobuf/timestamp.proto";
+
+service ProfileService {
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc CreateProfile(CreateProfileRequest) returns (CreateProfileResponse);
+}
+
+message GetProfileRequest {
+  string did = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetProfileResponse {
+  string did = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message CreateProfileRequest {
+  string did = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message CreateProfileResponse {
+  optional string error = 1;
+}
+
