@@ -9,6 +9,7 @@ import "google/protobuf/timestamp.proto";
 
 service ProfileService {
   rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
   rpc CreateProfile(CreateProfileRequest) returns (CreateProfileResponse);
 }
 
@@ -19,9 +20,17 @@ message GetProfileRequest {
 }
 
 message GetProfileResponse {
-  string did = 1 [
+  optional string error = 1;
+
+  string did = 2 [
     (buf.validate.field).required = true
   ];
+  optional string display_name = 3;
+  optional string description = 4;
+  optional string pronouns = 5;
+  optional string avatar = 6;
+  optional google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp indexed_at = 8;
 }
 
 message CreateProfileRequest {
@@ -29,9 +38,22 @@ message CreateProfileRequest {
     (buf.validate.field).required = true
   ];
   optional string created_at = 2;
+  optional string display_name = 3;
+  optional string description = 4;
+  optional string pronouns = 5;
+  optional string avatar = 6;
 }
 
 message CreateProfileResponse {
   optional string error = 1;
 }
 
+message DeleteProfileRequest {
+  string did = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message DeleteProfileResponse {
+  optional string error = 1;
+}

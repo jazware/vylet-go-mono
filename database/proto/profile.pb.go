@@ -10,7 +10,7 @@ import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	_ "google.golang.org/protobuf/types/known/timestamppb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -69,7 +69,14 @@ func (x *GetProfileRequest) GetDid() string {
 
 type GetProfileResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Did           string                 `protobuf:"bytes,1,opt,name=did,proto3" json:"did,omitempty"`
+	Error         *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Did           string                 `protobuf:"bytes,2,opt,name=did,proto3" json:"did,omitempty"`
+	DisplayName   *string                `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Pronouns      *string                `protobuf:"bytes,5,opt,name=pronouns,proto3,oneof" json:"pronouns,omitempty"`
+	Avatar        *string                `protobuf:"bytes,6,opt,name=avatar,proto3,oneof" json:"avatar,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3,oneof" json:"created_at,omitempty"`
+	IndexedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=indexed_at,json=indexedAt,proto3" json:"indexed_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -104,6 +111,13 @@ func (*GetProfileResponse) Descriptor() ([]byte, []int) {
 	return file_profile_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *GetProfileResponse) GetError() string {
+	if x != nil && x.Error != nil {
+		return *x.Error
+	}
+	return ""
+}
+
 func (x *GetProfileResponse) GetDid() string {
 	if x != nil {
 		return x.Did
@@ -111,10 +125,56 @@ func (x *GetProfileResponse) GetDid() string {
 	return ""
 }
 
+func (x *GetProfileResponse) GetDisplayName() string {
+	if x != nil && x.DisplayName != nil {
+		return *x.DisplayName
+	}
+	return ""
+}
+
+func (x *GetProfileResponse) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *GetProfileResponse) GetPronouns() string {
+	if x != nil && x.Pronouns != nil {
+		return *x.Pronouns
+	}
+	return ""
+}
+
+func (x *GetProfileResponse) GetAvatar() string {
+	if x != nil && x.Avatar != nil {
+		return *x.Avatar
+	}
+	return ""
+}
+
+func (x *GetProfileResponse) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *GetProfileResponse) GetIndexedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.IndexedAt
+	}
+	return nil
+}
+
 type CreateProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Did           string                 `protobuf:"bytes,1,opt,name=did,proto3" json:"did,omitempty"`
 	CreatedAt     *string                `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,oneof" json:"created_at,omitempty"`
+	DisplayName   *string                `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3,oneof" json:"display_name,omitempty"`
+	Description   *string                `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Pronouns      *string                `protobuf:"bytes,5,opt,name=pronouns,proto3,oneof" json:"pronouns,omitempty"`
+	Avatar        *string                `protobuf:"bytes,6,opt,name=avatar,proto3,oneof" json:"avatar,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -163,6 +223,34 @@ func (x *CreateProfileRequest) GetCreatedAt() string {
 	return ""
 }
 
+func (x *CreateProfileRequest) GetDisplayName() string {
+	if x != nil && x.DisplayName != nil {
+		return *x.DisplayName
+	}
+	return ""
+}
+
+func (x *CreateProfileRequest) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
+func (x *CreateProfileRequest) GetPronouns() string {
+	if x != nil && x.Pronouns != nil {
+		return *x.Pronouns
+	}
+	return ""
+}
+
+func (x *CreateProfileRequest) GetAvatar() string {
+	if x != nil && x.Avatar != nil {
+		return *x.Avatar
+	}
+	return ""
+}
+
 type CreateProfileResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
@@ -207,26 +295,143 @@ func (x *CreateProfileResponse) GetError() string {
 	return ""
 }
 
+type DeleteProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Did           string                 `protobuf:"bytes,1,opt,name=did,proto3" json:"did,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteProfileRequest) Reset() {
+	*x = DeleteProfileRequest{}
+	mi := &file_profile_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteProfileRequest) ProtoMessage() {}
+
+func (x *DeleteProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_profile_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteProfileRequest.ProtoReflect.Descriptor instead.
+func (*DeleteProfileRequest) Descriptor() ([]byte, []int) {
+	return file_profile_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *DeleteProfileRequest) GetDid() string {
+	if x != nil {
+		return x.Did
+	}
+	return ""
+}
+
+type DeleteProfileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Error         *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteProfileResponse) Reset() {
+	*x = DeleteProfileResponse{}
+	mi := &file_profile_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteProfileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteProfileResponse) ProtoMessage() {}
+
+func (x *DeleteProfileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_profile_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteProfileResponse.ProtoReflect.Descriptor instead.
+func (*DeleteProfileResponse) Descriptor() ([]byte, []int) {
+	return file_profile_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DeleteProfileResponse) GetError() string {
+	if x != nil && x.Error != nil {
+		return *x.Error
+	}
+	return ""
+}
+
 var File_profile_proto protoreflect.FileDescriptor
 
 const file_profile_proto_rawDesc = "" +
 	"\n" +
 	"\rprofile.proto\x12\rvyletdatabase\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"-\n" +
 	"\x11GetProfileRequest\x12\x18\n" +
-	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\".\n" +
-	"\x12GetProfileResponse\x12\x18\n" +
-	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"c\n" +
+	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"\xa3\x03\n" +
+	"\x12GetProfileResponse\x12\x19\n" +
+	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x12\x18\n" +
+	"\x03did\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\x12&\n" +
+	"\fdisplay_name\x18\x03 \x01(\tH\x01R\vdisplayName\x88\x01\x01\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x02R\vdescription\x88\x01\x01\x12\x1f\n" +
+	"\bpronouns\x18\x05 \x01(\tH\x03R\bpronouns\x88\x01\x01\x12\x1b\n" +
+	"\x06avatar\x18\x06 \x01(\tH\x04R\x06avatar\x88\x01\x01\x12>\n" +
+	"\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampH\x05R\tcreatedAt\x88\x01\x01\x129\n" +
+	"\n" +
+	"indexed_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tindexedAtB\b\n" +
+	"\x06_errorB\x0f\n" +
+	"\r_display_nameB\x0e\n" +
+	"\f_descriptionB\v\n" +
+	"\t_pronounsB\t\n" +
+	"\a_avatarB\r\n" +
+	"\v_created_at\"\xa9\x02\n" +
 	"\x14CreateProfileRequest\x12\x18\n" +
 	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\x12\"\n" +
 	"\n" +
-	"created_at\x18\x02 \x01(\tH\x00R\tcreatedAt\x88\x01\x01B\r\n" +
-	"\v_created_at\"<\n" +
+	"created_at\x18\x02 \x01(\tH\x00R\tcreatedAt\x88\x01\x01\x12&\n" +
+	"\fdisplay_name\x18\x03 \x01(\tH\x01R\vdisplayName\x88\x01\x01\x12%\n" +
+	"\vdescription\x18\x04 \x01(\tH\x02R\vdescription\x88\x01\x01\x12\x1f\n" +
+	"\bpronouns\x18\x05 \x01(\tH\x03R\bpronouns\x88\x01\x01\x12\x1b\n" +
+	"\x06avatar\x18\x06 \x01(\tH\x04R\x06avatar\x88\x01\x01B\r\n" +
+	"\v_created_atB\x0f\n" +
+	"\r_display_nameB\x0e\n" +
+	"\f_descriptionB\v\n" +
+	"\t_pronounsB\t\n" +
+	"\a_avatar\"<\n" +
 	"\x15CreateProfileResponse\x12\x19\n" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01B\b\n" +
-	"\x06_error2\xbf\x01\n" +
+	"\x06_error\"0\n" +
+	"\x14DeleteProfileRequest\x12\x18\n" +
+	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"<\n" +
+	"\x15DeleteProfileResponse\x12\x19\n" +
+	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01B\b\n" +
+	"\x06_error2\x9b\x02\n" +
 	"\x0eProfileService\x12Q\n" +
 	"\n" +
 	"GetProfile\x12 .vyletdatabase.GetProfileRequest\x1a!.vyletdatabase.GetProfileResponse\x12Z\n" +
+	"\rDeleteProfile\x12#.vyletdatabase.DeleteProfileRequest\x1a$.vyletdatabase.DeleteProfileResponse\x12Z\n" +
 	"\rCreateProfile\x12#.vyletdatabase.CreateProfileRequest\x1a$.vyletdatabase.CreateProfileResponseB\x87\x01\n" +
 	"\x11com.vyletdatabaseB\fProfileProtoP\x01Z\x10./;vyletdatabase\xa2\x02\x03VXX\xaa\x02\rVyletdatabase\xca\x02\rVyletdatabase\xe2\x02\x19Vyletdatabase\\GPBMetadata\xea\x02\rVyletdatabaseb\x06proto3"
 
@@ -242,23 +447,30 @@ func file_profile_proto_rawDescGZIP() []byte {
 	return file_profile_proto_rawDescData
 }
 
-var file_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_profile_proto_goTypes = []any{
 	(*GetProfileRequest)(nil),     // 0: vyletdatabase.GetProfileRequest
 	(*GetProfileResponse)(nil),    // 1: vyletdatabase.GetProfileResponse
 	(*CreateProfileRequest)(nil),  // 2: vyletdatabase.CreateProfileRequest
 	(*CreateProfileResponse)(nil), // 3: vyletdatabase.CreateProfileResponse
+	(*DeleteProfileRequest)(nil),  // 4: vyletdatabase.DeleteProfileRequest
+	(*DeleteProfileResponse)(nil), // 5: vyletdatabase.DeleteProfileResponse
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_profile_proto_depIdxs = []int32{
-	0, // 0: vyletdatabase.ProfileService.GetProfile:input_type -> vyletdatabase.GetProfileRequest
-	2, // 1: vyletdatabase.ProfileService.CreateProfile:input_type -> vyletdatabase.CreateProfileRequest
-	1, // 2: vyletdatabase.ProfileService.GetProfile:output_type -> vyletdatabase.GetProfileResponse
-	3, // 3: vyletdatabase.ProfileService.CreateProfile:output_type -> vyletdatabase.CreateProfileResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6, // 0: vyletdatabase.GetProfileResponse.created_at:type_name -> google.protobuf.Timestamp
+	6, // 1: vyletdatabase.GetProfileResponse.indexed_at:type_name -> google.protobuf.Timestamp
+	0, // 2: vyletdatabase.ProfileService.GetProfile:input_type -> vyletdatabase.GetProfileRequest
+	4, // 3: vyletdatabase.ProfileService.DeleteProfile:input_type -> vyletdatabase.DeleteProfileRequest
+	2, // 4: vyletdatabase.ProfileService.CreateProfile:input_type -> vyletdatabase.CreateProfileRequest
+	1, // 5: vyletdatabase.ProfileService.GetProfile:output_type -> vyletdatabase.GetProfileResponse
+	5, // 6: vyletdatabase.ProfileService.DeleteProfile:output_type -> vyletdatabase.DeleteProfileResponse
+	3, // 7: vyletdatabase.ProfileService.CreateProfile:output_type -> vyletdatabase.CreateProfileResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_profile_proto_init() }
@@ -266,15 +478,17 @@ func file_profile_proto_init() {
 	if File_profile_proto != nil {
 		return
 	}
+	file_profile_proto_msgTypes[1].OneofWrappers = []any{}
 	file_profile_proto_msgTypes[2].OneofWrappers = []any{}
 	file_profile_proto_msgTypes[3].OneofWrappers = []any{}
+	file_profile_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_profile_proto_rawDesc), len(file_profile_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
