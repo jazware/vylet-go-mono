@@ -22,6 +22,7 @@ import (
 	vyletdatabase "github.com/vylet-app/go/database/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 )
 
 const (
@@ -93,6 +94,8 @@ func New(args *Args) (*Server, error) {
 		cassandraAddrs:    args.CassandraAddrs,
 		cassandraKeyspace: args.CassandraKeyspace,
 
+		listenerAddr: args.ListenAddr,
+
 		cqlSession: session,
 
 		grpcServer: grpcServer,
@@ -106,12 +109,14 @@ func New(args *Args) (*Server, error) {
 func (s *Server) Run(ctx context.Context) error {
 	logger := s.logger.With("name", "Run")
 
+	logger.Info("attempting to listen", "addr", s.listenerAddr)
+
 	listener, err := net.Listen("tcp", s.listenerAddr)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	logger.Info("running gRPC server")
+	logger.Info("running gRPC server", "addr", s.listenerAddr)
 
 	grpcServerErr := make(chan error, 1)
 	go func() {
@@ -150,6 +155,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 func (s *Server) registerServices() {
 	vyletdatabase.RegisterProfileServiceServer(s.grpcServer, s)
+	reflection.Register(s.grpcServer)
 }
 
 func GenerateTLSCertificate(commonName string) (*tls.Certificate, error) {

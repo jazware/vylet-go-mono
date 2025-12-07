@@ -114,6 +114,7 @@ func (x *GetProfileResponse) GetDid() string {
 type CreateProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Did           string                 `protobuf:"bytes,1,opt,name=did,proto3" json:"did,omitempty"`
+	CreatedAt     *string                `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3,oneof" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -151,6 +152,13 @@ func (*CreateProfileRequest) Descriptor() ([]byte, []int) {
 func (x *CreateProfileRequest) GetDid() string {
 	if x != nil {
 		return x.Did
+	}
+	return ""
+}
+
+func (x *CreateProfileRequest) GetCreatedAt() string {
+	if x != nil && x.CreatedAt != nil {
+		return *x.CreatedAt
 	}
 	return ""
 }
@@ -207,9 +215,12 @@ const file_profile_proto_rawDesc = "" +
 	"\x11GetProfileRequest\x12\x18\n" +
 	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\".\n" +
 	"\x12GetProfileResponse\x12\x18\n" +
-	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"0\n" +
+	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"c\n" +
 	"\x14CreateProfileRequest\x12\x18\n" +
-	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\"<\n" +
+	"\x03did\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x03did\x12\"\n" +
+	"\n" +
+	"created_at\x18\x02 \x01(\tH\x00R\tcreatedAt\x88\x01\x01B\r\n" +
+	"\v_created_at\"<\n" +
 	"\x15CreateProfileResponse\x12\x19\n" +
 	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01B\b\n" +
 	"\x06_error2\xbf\x01\n" +
@@ -255,6 +266,7 @@ func file_profile_proto_init() {
 	if File_profile_proto != nil {
 		return
 	}
+	file_profile_proto_msgTypes[2].OneofWrappers = []any{}
 	file_profile_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

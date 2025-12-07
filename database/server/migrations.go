@@ -54,7 +54,9 @@ func RunMigrations(session *gocql.Session, migrationsPath string) error {
 
 // RollbackMigration rolls back the last migration
 func RollbackMigration(session *gocql.Session, migrationsPath string) error {
-	driver, err := cassandra.WithInstance(session, &cassandra.Config{})
+	driver, err := cassandra.WithInstance(session, &cassandra.Config{
+		KeyspaceName: session.Query("").Consistency(gocql.One).GetConsistency().String(),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}

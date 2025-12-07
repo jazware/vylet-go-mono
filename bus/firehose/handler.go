@@ -18,6 +18,7 @@ import (
 
 func (kf *KafkaFirehose) handleEvent(ctx context.Context, evt *events.XRPCStreamEvent) error {
 	logger := kf.logger.With("name", "handleEvent", "seq", evt.Sequence())
+
 	logger.Debug("received event")
 
 	var kind string
@@ -96,6 +97,8 @@ func (kf *KafkaFirehose) handleEvent(ctx context.Context, evt *events.XRPCStream
 			func() {
 				status := "error"
 				var collection string
+
+				logger := logger.With("collection", collection)
 
 				defer func() {
 					recordsHandled.WithLabelValues(status, collection).Inc()

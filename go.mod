@@ -10,6 +10,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/ipfs/go-cid v0.4.1
+	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/twmb/franz-go v1.19.5
 	github.com/urfave/cli/v2 v2.27.7

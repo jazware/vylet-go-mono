@@ -28,6 +28,7 @@ message CreateProfileRequest {
   string did = 1 [
     (buf.validate.field).required = true
   ];
+  optional string created_at = 2;
 }
 
 message CreateProfileResponse {

@@ -12,10 +12,10 @@ cborgen:
 	go run ./gen
 
 migrate-up:
-    go run ./cmd/database/migrate up
+    go run ./cmd/database/migrate -k vylet up
 
 migrate-down:
-    go run ./cmd/database/migrate down
+    go run ./cmd/database/migrate -k vylet down
 
 migrate-create name:
     #!/usr/bin/env bash
@@ -35,3 +35,12 @@ cassandra-setup:
 
 cassandra-shell:
     docker exec -it cassandra cqlsh
+
+run-database-server:
+    go run ./cmd/database
+
+run-firehose:
+    go run ./cmd/bus/firehose --desired-collections "app.vylet.*" --websocket-host "wss://bsky.network" --output-topic firehose-events-prod
+
+run-indexer:
+    go run ./cmd/indexer
