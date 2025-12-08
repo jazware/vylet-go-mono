@@ -13,6 +13,7 @@ import (
 	"github.com/vylet-app/go/database/client"
 	vyletdatabase "github.com/vylet-app/go/database/proto"
 	"github.com/vylet-app/go/generated/vylet"
+	"github.com/vylet-app/go/handlers"
 	"github.com/vylet-app/go/internal/helpers"
 	"golang.org/x/sync/errgroup"
 )
@@ -207,43 +208,37 @@ func (s *Server) postsToPostViews(ctx context.Context, posts map[string]*vyletda
 	return feedPostViews, nil
 }
 
-type GetFeedPostsInput struct {
-	Uris []string `query:"uris"`
+func (s *Server) FeedGetPostsRequiresAuth() bool {
+	return false
 }
 
-func (s *Server) handleGetPosts(e echo.Context) error {
+func (s *Server) HandleFeedGetPosts(e echo.Context, input *handlers.FeedGetPostsInput) (*vylet.FeedGetPosts_Output, *echo.HTTPError) {
 	ctx := e.Request().Context()
 	viewer := getViewer(e)
 
-	logger := s.logger.With("name", "handleGetPost", "viewer", viewer)
-
-	var input GetFeedPostsInput
-	if err := e.Bind(&input); err != nil {
-		logger.Error("failed to bind", "err", err)
-		return ErrInternalServerErr
-	}
+	logger := s.logger.With("name", "HandleFeedGetPosts", "viewer", viewer)
 
 	if len(input.Uris) == 0 {
-		return NewValidationError("uris", "must supply at least one AT-URI")
+		return nil, NewValidationError("uris", "must supply at least one AT-URI")
 	}
 
 	if len(input.Uris) > 25 {
-		return NewValidationError("uris", "no more than 25 AT-URIs may be supplied")
+		return nil, NewValidationError("uris", "no more than 25 AT-URIs may be supplied")
 	}
 
 	if allValid, err := helpers.ValidateUris(input.Uris); !allValid {
 		logger.Warn("received invalid URIs", "uris", input.Uris, "err", err)
-		return NewValidationError("uris", "all URIs must be valid AT-URIs")
+		return nil, NewValidationError("uris", "all URIs must be valid AT-URIs")
 	}
 
 	postViews, err := s.getPostViews(ctx, input.Uris, viewer)
 	if err != nil {
 		logger.Error("failed to get posts", "err", err)
-		return ErrInternalServerErr
+		return nil, ErrInternalServerErr
 	}
 
 	if len(postViews) == 0 {
-		return ErrNotFound
+		return nil, ErrNotFound
 	}
 
 	orderedPostViews := make([]*vylet.FeedDefs_PostView, 0, len(postViews))
@@ -256,31 +251,23 @@ func (s *Server) handleGetPosts(e echo.Context) error {
 		orderedPostViews = append(orderedPostViews, postView)
 	}
 
-	return e.JSON(200, vylet.FeedGetPosts_Output{
+	return &vylet.FeedGetPosts_Output{
 		Posts: orderedPostViews,
-	})
+	}, nil
 }
 
-type GetFeedActorPostsInput struct {
-	Actor  string  `query:"actor"`
-	Limit  *int64  `query:"limit"`
-	Cursor *string `query:"cursor"`
+func (s *Server) FeedGetActorPostsRequiresAuth() bool {
+	return false
 }
 
-func (s *Server) handleGetActorPosts(e echo.Context) error {
+func (s *Server) HandleFeedGetActorPosts(e echo.Context, input *handlers.FeedGetActorPostsInput) (*vylet.FeedGetActorPosts_Output, *echo.HTTPError) {
 	ctx := e.Request().Context()
 	viewer := getViewer(e)
 
 	logger := s.logger.With("name", "handleGetActorPosts", "viewer", viewer)
 
-	var input GetFeedActorPostsInput
-	if err := e.Bind(&input); err != nil {
-		logger.Error("failed to bind", "err", err)
-		return ErrInternalServerErr
-	}
-
 	if input.Limit != nil && (*input.Limit < 1 || *input.Limit > 100) {
-		return NewValidationError("limit", "limit must be between 1 and 100")
+		return nil, NewValidationError("limit", "limit must be between 1 and 100")
 	} else if input.Limit == nil {
 		input.Limit = helpers.ToInt64Ptr(25)
 	}
@@ -290,10 +277,10 @@ func (s *Server) handleGetActorPosts(e echo.Context) error {
 	did, _, err := s.fetchDidHandleFromActor(ctx, input.Actor)
 	if err != nil {
 		if errors.Is(err, ErrActorNotValid) {
-			return NewValidationError("actor", "actor must be a valid DID or handle")
+			return nil, NewValidationError("actor", "actor must be a valid DID or handle")
 		}
 		logger.Error("error fetching did and handle", "err", err)
-		return ErrInternalServerErr
+		return nil, ErrInternalServerErr
 	}
 
 	resp, err := s.client.Post.GetPostsByActor(ctx, &vyletdatabase.GetPostsByActorRequest{
@@ -303,13 +290,13 @@ func (s *Server) handleGetActorPosts(e echo.Context) error {
 	})
 	if err != nil {
 		logger.Error("failed to get posts", "did", did)
-		return ErrInternalServerErr
+		return nil, ErrInternalServerErr
 	}
 
 	postViews, err := s.postsToPostViews(ctx, resp.Posts, viewer)
 	if err != nil {
 		s.logger.Error("failed to get post views", "err", err)
-		return ErrInternalServerErr
+		return nil, ErrInternalServerErr
 	}
 
 	sortedPostViews := make([]*vylet.FeedDefs_PostView, 0, len(postViews))
@@ -320,8 +307,8 @@ func (s *Server) handleGetActorPosts(e echo.Context) error {
 		return sortedPostViews[i].CreatedAt > sortedPostViews[j].CreatedAt
 	})
 
-	return e.JSON(200, vylet.FeedGetActorPosts_Output{
+	return &vylet.FeedGetActorPosts_Output{
 		Posts:  sortedPostViews,
 		Cursor: resp.Cursor,
-	})
+	}, nil
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	slogecho "github.com/samber/slog-echo"
 	"github.com/vylet-app/go/database/client"
+	"github.com/vylet-app/go/handlers"
 	"golang.org/x/time/rate"
 )
 
@@ -138,21 +139,15 @@ func (s *Server) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) registerHandlers() {
-	// app.vylet.actor
-	s.echo.GET("/xrpc/app.vylet.actor.getProfile", s.handleGetProfile)
-	s.echo.GET("/xrpc/app.vylet.actor.getProfiles", s.handleGetProfiles)
+func (s *Server) Logger() *slog.Logger {
+	return s.logger
+}
 
-	// app.vylet.feed
-	s.echo.GET("/xrpc/app.vylet.feed.getPosts", s.handleGetPosts)
-	s.echo.GET("/xrpc/app.vylet.feed.getSubjectLikes", s.handleGetSubjectLikes)
-	s.echo.GET("/xrpc/app.vylet.feed.getActorPosts", s.handleGetActorPosts)
+func (s *Server) registerHandlers() {
+	handlers.RegisterHandlers(s.echo, s)
 
 	// app.vylet.media
 	s.echo.GET("/xrpc/app.vylet.media.getBlob", s.handleGetBlob)
-  
-	// SAMPLE
-	s.echo.GET("/xrpc/authed", nil, requireAuth)
 }
 
 func (s *Server) errorHandler(err error, c echo.Context) {
@@ -270,18 +265,6 @@ func (s *Server) didAuthMiddleware() echo.MiddlewareFunc {
 
 			return next(e)
 		}
-	}
-}
-
-func requireAuth(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(e echo.Context) error {
-		viewer := getViewer(e)
-
-		if viewer == "" {
-			return ErrUnauthorized
-		}
-
-		return next(e)
 	}
 }
 
