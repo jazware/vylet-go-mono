@@ -7,13 +7,7 @@ import (
 )
 
 func (s *Server) handleEvent(ctx context.Context, evt *vyletkafka.FirehoseEvent) error {
-	logger := s.logger.With("name", "handleEvent")
 	if evt.Commit != nil {
-		err := s.handleCommit(ctx, evt)
-		if err != nil {
-			logger.Error("error handling event", "err", err)
-			return err
-		}
 		return s.handleCommit(ctx, evt)
 	}
 

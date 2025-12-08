@@ -34,8 +34,10 @@ func (s *Server) handleFeedPost(ctx context.Context, evt *vyletkafka.FirehoseEve
 
 		for _, img := range rec.Media.MediaImages.Images {
 			dbimg := &vyletdatabase.Image{
-				Cid: img.Image.Ref.String(),
-				Alt: &img.Alt,
+				Cid:  img.Image.Ref.String(),
+				Size: img.Image.Size,
+				Mime: img.Image.MimeType,
+				Alt:  &img.Alt,
 			}
 			if img.AspectRatio != nil {
 				dbimg.Width = &img.AspectRatio.Width

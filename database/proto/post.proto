@@ -13,6 +13,8 @@ service PostService {
 
   rpc GetPosts(GetPostsRequest) returns (GetPostsResponse);
   rpc GetPostsByActor(GetPostsByActorRequest) returns (GetPostsByActorResponse);
+  rpc GetPostInteractionCounts(GetPostInteractionCountsRequest) returns (GetPostInteractionCountsResponse);
+  rpc GetPostsInteractionCounts(GetPostsInteractionCountsRequest) returns (GetPostsInteractionCountsResponse);
 }
 
 message Image {
@@ -69,7 +71,7 @@ message GetPostsRequest {
 
 message GetPostsResponse {
   optional string error = 1;
-  repeated Post posts = 2;
+  map<string, Post> posts = 2;
 }
 
 message GetPostsByActorRequest {
@@ -84,6 +86,37 @@ message GetPostsByActorRequest {
 
 message GetPostsByActorResponse {
   optional string error = 1;
-  repeated Post posts = 2;
+  map<string, Post> posts = 2;
   optional string cursor = 3;
+}
+
+message GetPostInteractionCountsRequest {
+  string uri = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message PostInteractionCounts {
+  int64 likes = 1 [
+    (buf.validate.field).required = true
+  ];
+  int64 replies = 2 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetPostInteractionCountsResponse {
+  optional string error = 1;
+  optional PostInteractionCounts counts = 2;
+}
+
+message GetPostsInteractionCountsRequest {
+  repeated string uris = 1 [
+    (buf.validate.field).required = true
+  ];
+}
+
+message GetPostsInteractionCountsResponse {
+  optional string error = 1;
+  map<string, PostInteractionCounts> counts = 2;
 }

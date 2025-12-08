@@ -37,9 +37,9 @@ type FeedDefs_PostView struct {
 	Facets     []*RichtextFacet              `json:"facets,omitempty" cborgen:"facets,omitempty"`
 	IndexedAt  string                        `json:"indexedAt" cborgen:"indexedAt"`
 	Labels     []*comatproto.LabelDefs_Label `json:"labels,omitempty" cborgen:"labels,omitempty"`
-	LikeCount  *int64                        `json:"likeCount,omitempty" cborgen:"likeCount,omitempty"`
+	LikeCount  int64                         `json:"likeCount" cborgen:"likeCount"`
 	Media      *FeedDefs_PostView_Media      `json:"media" cborgen:"media"`
-	ReplyCount *int64                        `json:"replyCount,omitempty" cborgen:"replyCount,omitempty"`
+	ReplyCount int64                         `json:"replyCount" cborgen:"replyCount"`
 	Uri        string                        `json:"uri" cborgen:"uri"`
 	Viewer     *FeedDefs_ViewerState         `json:"viewer,omitempty" cborgen:"viewer,omitempty"`
 }

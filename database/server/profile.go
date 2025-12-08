@@ -138,7 +138,7 @@ func (s *Server) GetProfiles(ctx context.Context, req *vyletdatabase.GetProfiles
 	logger := s.logger.With("name", "GetProfiles")
 
 	resp := &vyletdatabase.GetProfilesResponse{
-		Profiles: make([]*vyletdatabase.Profile, 0, len(req.Dids)),
+		Profiles: make(map[string]*vyletdatabase.Profile),
 	}
 
 	iter := s.cqlSession.Query(
@@ -176,7 +176,7 @@ func (s *Server) GetProfiles(ctx context.Context, req *vyletdatabase.GetProfiles
 		profile.CreatedAt = timestamppb.New(createdAt)
 		profile.IndexedAt = timestamppb.New(indexedAt)
 
-		resp.Profiles = append(resp.Profiles, profile)
+		resp.Profiles[profile.Did] = profile
 	}
 
 	if err := iter.Close(); err != nil {

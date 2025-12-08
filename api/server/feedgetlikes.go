@@ -67,6 +67,10 @@ func (s *Server) handleGetLikesBySubject(e echo.Context) error {
 		return ErrInternalServerErr
 	}
 
+	if input.Uri == "" {
+		return NewValidationError("uri", "URI must be provided")
+	}
+
 	if input.Limit < 1 || input.Limit > 100 {
 		return NewValidationError("limit", "limit must be between 1 and 100")
 	}

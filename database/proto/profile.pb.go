@@ -434,7 +434,7 @@ func (x *GetProfilesRequest) GetDids() []string {
 type GetProfilesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Error         *string                `protobuf:"bytes,1,opt,name=error,proto3,oneof" json:"error,omitempty"`
-	Profiles      []*Profile             `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	Profiles      map[string]*Profile    `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -476,7 +476,7 @@ func (x *GetProfilesResponse) GetError() string {
 	return ""
 }
 
-func (x *GetProfilesResponse) GetProfiles() []*Profile {
+func (x *GetProfilesResponse) GetProfiles() map[string]*Profile {
 	if x != nil {
 		return x.Profiles
 	}
@@ -521,10 +521,13 @@ const file_profile_proto_rawDesc = "" +
 	"\n" +
 	"\b_profile\"0\n" +
 	"\x12GetProfilesRequest\x12\x1a\n" +
-	"\x04dids\x18\x01 \x03(\tB\x06\xbaH\x03\xc8\x01\x01R\x04dids\"n\n" +
+	"\x04dids\x18\x01 \x03(\tB\x06\xbaH\x03\xc8\x01\x01R\x04dids\"\xdd\x01\n" +
 	"\x13GetProfilesResponse\x12\x19\n" +
-	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x122\n" +
-	"\bprofiles\x18\x02 \x03(\v2\x16.vyletdatabase.ProfileR\bprofilesB\b\n" +
+	"\x05error\x18\x01 \x01(\tH\x00R\x05error\x88\x01\x01\x12L\n" +
+	"\bprofiles\x18\x02 \x03(\v20.vyletdatabase.GetProfilesResponse.ProfilesEntryR\bprofiles\x1aS\n" +
+	"\rProfilesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.vyletdatabase.ProfileR\x05value:\x028\x01B\b\n" +
 	"\x06_error2\xcd\x03\n" +
 	"\x0eProfileService\x12Z\n" +
 	"\rCreateProfile\x12#.vyletdatabase.CreateProfileRequest\x1a$.vyletdatabase.CreateProfileResponse\x12Z\n" +
@@ -547,7 +550,7 @@ func file_profile_proto_rawDescGZIP() []byte {
 	return file_profile_proto_rawDescData
 }
 
-var file_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_profile_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_profile_proto_goTypes = []any{
 	(*Profile)(nil),               // 0: vyletdatabase.Profile
 	(*CreateProfileRequest)(nil),  // 1: vyletdatabase.CreateProfileRequest
@@ -558,29 +561,31 @@ var file_profile_proto_goTypes = []any{
 	(*GetProfileResponse)(nil),    // 6: vyletdatabase.GetProfileResponse
 	(*GetProfilesRequest)(nil),    // 7: vyletdatabase.GetProfilesRequest
 	(*GetProfilesResponse)(nil),   // 8: vyletdatabase.GetProfilesResponse
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	nil,                           // 9: vyletdatabase.GetProfilesResponse.ProfilesEntry
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_profile_proto_depIdxs = []int32{
-	9,  // 0: vyletdatabase.Profile.created_at:type_name -> google.protobuf.Timestamp
-	9,  // 1: vyletdatabase.Profile.indexed_at:type_name -> google.protobuf.Timestamp
+	10, // 0: vyletdatabase.Profile.created_at:type_name -> google.protobuf.Timestamp
+	10, // 1: vyletdatabase.Profile.indexed_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: vyletdatabase.CreateProfileRequest.profile:type_name -> vyletdatabase.Profile
 	0,  // 3: vyletdatabase.GetProfileResponse.profile:type_name -> vyletdatabase.Profile
-	0,  // 4: vyletdatabase.GetProfilesResponse.profiles:type_name -> vyletdatabase.Profile
-	1,  // 5: vyletdatabase.ProfileService.CreateProfile:input_type -> vyletdatabase.CreateProfileRequest
-	1,  // 6: vyletdatabase.ProfileService.UpdateProfile:input_type -> vyletdatabase.CreateProfileRequest
-	3,  // 7: vyletdatabase.ProfileService.DeleteProfile:input_type -> vyletdatabase.DeleteProfileRequest
-	5,  // 8: vyletdatabase.ProfileService.GetProfile:input_type -> vyletdatabase.GetProfileRequest
-	7,  // 9: vyletdatabase.ProfileService.GetProfiles:input_type -> vyletdatabase.GetProfilesRequest
-	2,  // 10: vyletdatabase.ProfileService.CreateProfile:output_type -> vyletdatabase.CreateProfileResponse
-	2,  // 11: vyletdatabase.ProfileService.UpdateProfile:output_type -> vyletdatabase.CreateProfileResponse
-	4,  // 12: vyletdatabase.ProfileService.DeleteProfile:output_type -> vyletdatabase.DeleteProfileResponse
-	6,  // 13: vyletdatabase.ProfileService.GetProfile:output_type -> vyletdatabase.GetProfileResponse
-	8,  // 14: vyletdatabase.ProfileService.GetProfiles:output_type -> vyletdatabase.GetProfilesResponse
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	9,  // 4: vyletdatabase.GetProfilesResponse.profiles:type_name -> vyletdatabase.GetProfilesResponse.ProfilesEntry
+	0,  // 5: vyletdatabase.GetProfilesResponse.ProfilesEntry.value:type_name -> vyletdatabase.Profile
+	1,  // 6: vyletdatabase.ProfileService.CreateProfile:input_type -> vyletdatabase.CreateProfileRequest
+	1,  // 7: vyletdatabase.ProfileService.UpdateProfile:input_type -> vyletdatabase.CreateProfileRequest
+	3,  // 8: vyletdatabase.ProfileService.DeleteProfile:input_type -> vyletdatabase.DeleteProfileRequest
+	5,  // 9: vyletdatabase.ProfileService.GetProfile:input_type -> vyletdatabase.GetProfileRequest
+	7,  // 10: vyletdatabase.ProfileService.GetProfiles:input_type -> vyletdatabase.GetProfilesRequest
+	2,  // 11: vyletdatabase.ProfileService.CreateProfile:output_type -> vyletdatabase.CreateProfileResponse
+	2,  // 12: vyletdatabase.ProfileService.UpdateProfile:output_type -> vyletdatabase.CreateProfileResponse
+	4,  // 13: vyletdatabase.ProfileService.DeleteProfile:output_type -> vyletdatabase.DeleteProfileResponse
+	6,  // 14: vyletdatabase.ProfileService.GetProfile:output_type -> vyletdatabase.GetProfileResponse
+	8,  // 15: vyletdatabase.ProfileService.GetProfiles:output_type -> vyletdatabase.GetProfilesResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_profile_proto_init() }
@@ -599,7 +604,7 @@ func file_profile_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_profile_proto_rawDesc), len(file_profile_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

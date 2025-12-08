@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PostService_CreatePost_FullMethodName      = "/vyletdatabase.PostService/CreatePost"
-	PostService_DeletePost_FullMethodName      = "/vyletdatabase.PostService/DeletePost"
-	PostService_GetPosts_FullMethodName        = "/vyletdatabase.PostService/GetPosts"
-	PostService_GetPostsByActor_FullMethodName = "/vyletdatabase.PostService/GetPostsByActor"
+	PostService_CreatePost_FullMethodName                = "/vyletdatabase.PostService/CreatePost"
+	PostService_DeletePost_FullMethodName                = "/vyletdatabase.PostService/DeletePost"
+	PostService_GetPosts_FullMethodName                  = "/vyletdatabase.PostService/GetPosts"
+	PostService_GetPostsByActor_FullMethodName           = "/vyletdatabase.PostService/GetPostsByActor"
+	PostService_GetPostInteractionCounts_FullMethodName  = "/vyletdatabase.PostService/GetPostInteractionCounts"
+	PostService_GetPostsInteractionCounts_FullMethodName = "/vyletdatabase.PostService/GetPostsInteractionCounts"
 )
 
 // PostServiceClient is the client API for PostService service.
@@ -33,6 +35,8 @@ type PostServiceClient interface {
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	GetPosts(ctx context.Context, in *GetPostsRequest, opts ...grpc.CallOption) (*GetPostsResponse, error)
 	GetPostsByActor(ctx context.Context, in *GetPostsByActorRequest, opts ...grpc.CallOption) (*GetPostsByActorResponse, error)
+	GetPostInteractionCounts(ctx context.Context, in *GetPostInteractionCountsRequest, opts ...grpc.CallOption) (*GetPostInteractionCountsResponse, error)
+	GetPostsInteractionCounts(ctx context.Context, in *GetPostsInteractionCountsRequest, opts ...grpc.CallOption) (*GetPostsInteractionCountsResponse, error)
 }
 
 type postServiceClient struct {
@@ -83,6 +87,26 @@ func (c *postServiceClient) GetPostsByActor(ctx context.Context, in *GetPostsByA
 	return out, nil
 }
 
+func (c *postServiceClient) GetPostInteractionCounts(ctx context.Context, in *GetPostInteractionCountsRequest, opts ...grpc.CallOption) (*GetPostInteractionCountsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPostInteractionCountsResponse)
+	err := c.cc.Invoke(ctx, PostService_GetPostInteractionCounts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postServiceClient) GetPostsInteractionCounts(ctx context.Context, in *GetPostsInteractionCountsRequest, opts ...grpc.CallOption) (*GetPostsInteractionCountsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPostsInteractionCountsResponse)
+	err := c.cc.Invoke(ctx, PostService_GetPostsInteractionCounts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PostServiceServer is the server API for PostService service.
 // All implementations must embed UnimplementedPostServiceServer
 // for forward compatibility.
@@ -91,6 +115,8 @@ type PostServiceServer interface {
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	GetPosts(context.Context, *GetPostsRequest) (*GetPostsResponse, error)
 	GetPostsByActor(context.Context, *GetPostsByActorRequest) (*GetPostsByActorResponse, error)
+	GetPostInteractionCounts(context.Context, *GetPostInteractionCountsRequest) (*GetPostInteractionCountsResponse, error)
+	GetPostsInteractionCounts(context.Context, *GetPostsInteractionCountsRequest) (*GetPostsInteractionCountsResponse, error)
 	mustEmbedUnimplementedPostServiceServer()
 }
 
@@ -112,6 +138,12 @@ func (UnimplementedPostServiceServer) GetPosts(context.Context, *GetPostsRequest
 }
 func (UnimplementedPostServiceServer) GetPostsByActor(context.Context, *GetPostsByActorRequest) (*GetPostsByActorResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPostsByActor not implemented")
+}
+func (UnimplementedPostServiceServer) GetPostInteractionCounts(context.Context, *GetPostInteractionCountsRequest) (*GetPostInteractionCountsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPostInteractionCounts not implemented")
+}
+func (UnimplementedPostServiceServer) GetPostsInteractionCounts(context.Context, *GetPostsInteractionCountsRequest) (*GetPostsInteractionCountsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPostsInteractionCounts not implemented")
 }
 func (UnimplementedPostServiceServer) mustEmbedUnimplementedPostServiceServer() {}
 func (UnimplementedPostServiceServer) testEmbeddedByValue()                     {}
@@ -206,6 +238,42 @@ func _PostService_GetPostsByActor_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PostService_GetPostInteractionCounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostInteractionCountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServiceServer).GetPostInteractionCounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostService_GetPostInteractionCounts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServiceServer).GetPostInteractionCounts(ctx, req.(*GetPostInteractionCountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PostService_GetPostsInteractionCounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostsInteractionCountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServiceServer).GetPostsInteractionCounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostService_GetPostsInteractionCounts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServiceServer).GetPostsInteractionCounts(ctx, req.(*GetPostsInteractionCountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PostService_ServiceDesc is the grpc.ServiceDesc for PostService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +296,14 @@ var PostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPostsByActor",
 			Handler:    _PostService_GetPostsByActor_Handler,
+		},
+		{
+			MethodName: "GetPostInteractionCounts",
+			Handler:    _PostService_GetPostInteractionCounts_Handler,
+		},
+		{
+			MethodName: "GetPostsInteractionCounts",
+			Handler:    _PostService_GetPostsInteractionCounts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

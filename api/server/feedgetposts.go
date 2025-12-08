@@ -12,6 +12,7 @@ import (
 	vyletdatabase "github.com/vylet-app/go/database/proto"
 	"github.com/vylet-app/go/generated/vylet"
 	"github.com/vylet-app/go/internal/helpers"
+	"golang.org/x/sync/errgroup"
 )
 
 type GetFeedPostsInput struct {
@@ -103,9 +104,30 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 		addedDids[post.AuthorDid] = struct{}{}
 	}
 
-	profiles, err := s.getProfilesBasic(ctx, dids)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get profiles for posts: %w", err)
+	g, gCtx := errgroup.WithContext(ctx)
+	var profiles map[string]*vylet.ActorDefs_ProfileViewBasic
+	var countsResp *vyletdatabase.GetPostsInteractionCountsResponse
+	g.Go(func() error {
+		maybeProfiles, err := s.getProfilesBasic(gCtx, dids)
+		if err != nil {
+			return err
+		}
+		profiles = maybeProfiles
+		return nil
+	})
+	g.Go(func() error {
+		maybeCounts, err := s.client.Post.GetPostsInteractionCounts(gCtx, &vyletdatabase.GetPostsInteractionCountsRequest{Uris: uris})
+		if err != nil {
+			return err
+		}
+		if maybeCounts.Error != nil {
+			return fmt.Errorf("failed to get post interaction counts: %s", *maybeCounts.Error)
+		}
+		countsResp = maybeCounts
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting metadata: %w", err)
 	}
 
 	feedPostViews := make(map[string]*vylet.FeedDefs_PostView)
@@ -113,6 +135,11 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 		profileBasic, ok := profiles[post.AuthorDid]
 		if !ok {
 			logger.Warn("failed to get profile for post", "did", post.AuthorDid, "uri", post.Uri)
+			continue
+		}
+		counts, ok := countsResp.Counts[post.Uri]
+		if !ok {
+			logger.Warn("failed to get counts for post", "uri", post.Uri)
 			continue
 		}
 
@@ -123,8 +150,8 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 			Facets:  []*vylet.RichtextFacet{},
 			// Labels:     []*atproto.LabelDefs_Label{},
 			Media:      &vylet.FeedDefs_PostView_Media{},
-			LikeCount:  new(int64),
-			ReplyCount: new(int64),
+			LikeCount:  counts.Likes,
+			ReplyCount: counts.Replies,
 			Uri:        post.Uri,
 			// Viewer:     &vylet.FeedDefs_ViewerState{
 			// 	Like: new(string),
@@ -138,7 +165,6 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 				Images: make([]*vylet.MediaImages_ViewImage, 0, len(post.Images)),
 			},
 		}
-
 		for _, img := range post.Images {
 			mediaImg := &vylet.MediaImages_ViewImage{
 				Alt:       img.Alt,
@@ -154,6 +180,7 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 
 			media.MediaImages_View.Images = append(media.MediaImages_View.Images, mediaImg)
 		}
+		postView.Media = &media
 
 		if post.Facets != nil {
 			var facets []*vylet.RichtextFacet

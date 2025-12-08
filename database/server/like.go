@@ -10,6 +10,7 @@ import (
 	"github.com/gocql/gocql"
 	vyletdatabase "github.com/vylet-app/go/database/proto"
 	"github.com/vylet-app/go/internal/helpers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) CreateLike(ctx context.Context, req *vyletdatabase.CreateLikeRequest) (*vyletdatabase.CreateLikeResponse, error) {
@@ -31,7 +32,7 @@ func (s *Server) CreateLike(ctx context.Context, req *vyletdatabase.CreateLikeRe
 		req.Like.SubjectUri,
 		req.Like.SubjectCid,
 		did,
-		req.Like.CreatedAt,
+		req.Like.CreatedAt.AsTime(),
 		now,
 	}
 
@@ -44,9 +45,21 @@ func (s *Server) CreateLike(ctx context.Context, req *vyletdatabase.CreateLikeRe
 
 	batch.Query(fmt.Sprintf(likeQuery, "likes_by_subject"), likeArgs...)
 	batch.Query(fmt.Sprintf(likeQuery, "likes_by_actor"), likeArgs...)
+	batch.Query(fmt.Sprintf(likeQuery, "likes_by_uri"), likeArgs...)
 
 	if err := s.cqlSession.ExecuteBatch(batch); err != nil {
 		logger.Error("failed to create like", "uri", req.Like.Uri, "err", err)
+		return &vyletdatabase.CreateLikeResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
+
+	if err := s.cqlSession.Query(`
+		UPDATE post_interaction_counts
+		SET like_count = like_count + 1
+		WHERE post_uri = ?
+	`, req.Like.SubjectUri).WithContext(ctx).Exec(); err != nil {
+		logger.Error("failed to increment like count", "subject_uri", req.Like.SubjectUri, "err", err)
 		return &vyletdatabase.CreateLikeResponse{
 			Error: helpers.ToStringPtr(err.Error()),
 		}, nil
@@ -56,22 +69,48 @@ func (s *Server) CreateLike(ctx context.Context, req *vyletdatabase.CreateLikeRe
 }
 
 func (s *Server) DeleteLike(ctx context.Context, req *vyletdatabase.DeleteLikeRequest) (*vyletdatabase.DeleteLikeResponse, error) {
-	logger := s.logger.With("name", "DeleteLike")
+	logger := s.logger.With("name", "DeleteLike", "uri", req.Uri)
+
+	var (
+		createdAt  time.Time
+		subjectUri string
+		authorDid  string
+	)
+
+	query := `
+		SELECT created_at, subject_uri, author_did
+		FROM likes_by_uri
+		WHERE uri = ?
+	`
+	if err := s.cqlSession.Query(query, req.Uri).WithContext(ctx).Scan(&createdAt, &subjectUri, &authorDid); err != nil {
+		if err == gocql.ErrNotFound {
+			logger.Warn("like not found", "uri", req.Uri)
+			return &vyletdatabase.DeleteLikeResponse{
+				Error: helpers.ToStringPtr("like not found"),
+			}, nil
+		}
+		logger.Error("failed to fetch like", "uri", req.Uri, "err", err)
+		return &vyletdatabase.DeleteLikeResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
 
 	batch := s.cqlSession.NewBatch(gocql.LoggedBatch).WithContext(ctx)
 
-	likeArgs := []any{
-		req.Uri,
-	}
+	batch.Query(`
+		DELETE FROM likes_by_uri
+		WHERE uri = ?
+	`, req.Uri)
 
-	likeQuery := `
-		DELETE FROM %s
-		WHERE
-			uri = ?
-	`
+	batch.Query(`
+		DELETE FROM likes_by_subject
+		WHERE subject_uri = ? AND created_at = ? AND uri = ?
+	`, subjectUri, createdAt, req.Uri)
 
-	batch.Query(fmt.Sprintf(likeQuery, "likes_by_subject"), likeArgs...)
-	batch.Query(fmt.Sprintf(likeQuery, "likes_by_actor"), likeArgs...)
+	batch.Query(`
+		DELETE FROM likes_by_actor
+		WHERE author_did = ? AND created_at = ? AND uri = ?
+	`, authorDid, createdAt, req.Uri)
 
 	if err := s.cqlSession.ExecuteBatch(batch); err != nil {
 		logger.Error("failed to delete like", "uri", req.Uri, "err", err)
@@ -80,11 +119,22 @@ func (s *Server) DeleteLike(ctx context.Context, req *vyletdatabase.DeleteLikeRe
 		}, nil
 	}
 
+	if err := s.cqlSession.Query(`
+		UPDATE post_interaction_counts
+		SET like_count = like_count - 1
+		WHERE post_uri = ?
+	`, subjectUri).WithContext(ctx).Exec(); err != nil {
+		logger.Error("failed to increment like count", "subject_uri", subjectUri, "err", err)
+		return &vyletdatabase.DeleteLikeResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
+
 	return &vyletdatabase.DeleteLikeResponse{}, nil
 }
 
-func (s *Server) GetLikesByPost(ctx context.Context, req *vyletdatabase.GetLikesBySubjectRequest) (*vyletdatabase.GetLikesBySubjectResponse, error) {
-	logger := s.logger.With("name", "GetLikesByPost", "subjectUri", req.SubjectUri)
+func (s *Server) GetLikesBySubject(ctx context.Context, req *vyletdatabase.GetLikesBySubjectRequest) (*vyletdatabase.GetLikesBySubjectResponse, error) {
+	logger := s.logger.With("name", "GetLikesBySubject", "subjectUri", req.SubjectUri)
 
 	if req.Limit <= 0 {
 		return nil, fmt.Errorf("limit must be greater than 0")
@@ -126,7 +176,7 @@ func (s *Server) GetLikesByPost(ctx context.Context, req *vyletdatabase.GetLikes
 			SELECT uri, cid, subject_uri, subject_cid, author_did, created_at, indexed_at
 			FROM likes_by_subject
 			WHERE subject_uri = ?
-			ORDER BY created_at DESC, subject_uri ASC
+			ORDER BY created_at DESC, uri ASC
 			LIMIT ?
 		`
 		args = []any{req.SubjectUri, req.Limit}
@@ -137,6 +187,8 @@ func (s *Server) GetLikesByPost(ctx context.Context, req *vyletdatabase.GetLikes
 
 	var likes []*vyletdatabase.Like
 
+	var createdAt time.Time
+	var indexedAt time.Time
 	for {
 		like := &vyletdatabase.Like{}
 		if !iter.Scan(
@@ -145,15 +197,16 @@ func (s *Server) GetLikesByPost(ctx context.Context, req *vyletdatabase.GetLikes
 			&like.SubjectUri,
 			&like.SubjectCid,
 			&like.AuthorDid,
-			&like.CreatedAt,
-			&like.IndexedAt,
+			&createdAt,
+			&indexedAt,
 		) {
 			break
 		}
+		like.CreatedAt = timestamppb.New(createdAt)
+		like.IndexedAt = timestamppb.New(indexedAt)
 
 		likes = append(likes, like)
 	}
-
 	if err := iter.Close(); err != nil {
 		logger.Error("failed to iterate likes", "err", err)
 		return &vyletdatabase.GetLikesBySubjectResponse{

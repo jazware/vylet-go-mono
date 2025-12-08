@@ -65,5 +65,5 @@ message GetProfilesRequest {
 
 message GetProfilesResponse {
   optional string error = 1;
-  repeated Profile profiles = 2;
+  map<string, Profile> profiles = 2;
 }

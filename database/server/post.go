@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/gocql/gocql"
 	vyletdatabase "github.com/vylet-app/go/database/proto"
 	"github.com/vylet-app/go/internal/helpers"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) getPostImages(ctx context.Context, postUri string) ([]*vyletdatabase.Image, error) {
@@ -70,7 +72,7 @@ func (s *Server) CreatePost(ctx context.Context, req *vyletdatabase.CreatePostRe
 		did,
 		req.Post.Caption,
 		req.Post.Facets,
-		req.Post.CreatedAt,
+		req.Post.CreatedAt.AsTime(),
 		now,
 	}
 
@@ -112,30 +114,49 @@ func (s *Server) CreatePost(ctx context.Context, req *vyletdatabase.CreatePostRe
 }
 
 func (s *Server) DeletePost(ctx context.Context, req *vyletdatabase.DeletePostRequest) (*vyletdatabase.DeletePostResponse, error) {
-	logger := s.logger.With("name", "DeletePost")
+	logger := s.logger.With("name", "DeletePost", "uri", req.Uri)
+
+	aturi, err := syntax.ParseATURI(req.Uri)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse aturi: %w", err)
+	}
+	did := aturi.Authority().String()
+
+	var createdAt time.Time
+	query := `
+		SELECT created_at
+		FROM posts_by_uri
+		WHERE uri = ?
+	`
+	if err := s.cqlSession.Query(query, req.Uri).WithContext(ctx).Scan(&createdAt); err != nil {
+		if err == gocql.ErrNotFound {
+			logger.Warn("post not found", "uri", req.Uri)
+			return &vyletdatabase.DeletePostResponse{
+				Error: helpers.ToStringPtr("post not found"),
+			}, nil
+		}
+		logger.Error("failed to fetch post", "uri", req.Uri, "err", err)
+		return &vyletdatabase.DeletePostResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
 
 	batch := s.cqlSession.NewBatch(gocql.LoggedBatch).WithContext(ctx)
 
-	postArgs := []any{
-		req.Uri,
-	}
+	batch.Query(`
+		DELETE FROM posts_by_uri
+		WHERE uri = ?
+	`, req.Uri)
 
-	postQuery := `
-		DELETE FROM %s
-		WHERE
-			uri = ?
-	`
+	batch.Query(`
+		DELETE FROM posts_by_actor
+		WHERE author_did = ? AND created_at = ? AND uri = ?
+	`, did, createdAt, req.Uri)
 
-	batch.Query(fmt.Sprintf(postQuery, "posts_by_actor"), postArgs...)
-	batch.Query(fmt.Sprintf(postQuery, "posts_by_uri"), postArgs...)
-
-	imgsQuery := `
+	batch.Query(`
 		DELETE FROM images_by_post
-		WHERE
-			post_uri = ?
-	`
-
-	batch.Query(imgsQuery, postArgs...)
+		WHERE post_uri = ?
+	`, req.Uri)
 
 	if err := s.cqlSession.ExecuteBatch(batch); err != nil {
 		logger.Error("failed to delete post", "uri", req.Uri, "err", err)
@@ -154,43 +175,50 @@ func (s *Server) GetPosts(ctx context.Context, req *vyletdatabase.GetPostsReques
 		return nil, fmt.Errorf("at least one URI must be specified")
 	}
 
-	var posts []*vyletdatabase.Post
+	query := `
+		SELECT uri, cid, author_did, caption, facets, created_at, indexed_at
+		FROM posts_by_uri
+		WHERE uri IN ?
+	`
 
-	for _, uri := range req.Uris {
-		query := `
-			SELECT uri, cid, author_did, caption, facets, created_at, indexed_at
-			FROM posts_by_uri
-			WHERE uri = ?
-		`
+	iter := s.cqlSession.Query(query, req.Uris).WithContext(ctx).Iter()
+	defer iter.Close()
 
+	posts := make(map[string]*vyletdatabase.Post)
+	for {
 		post := &vyletdatabase.Post{}
-		if err := s.cqlSession.Query(query, uri).WithContext(ctx).Scan(
+		var createdAt, indexedAt time.Time
+
+		if !iter.Scan(
 			&post.Uri,
 			&post.Cid,
 			&post.AuthorDid,
 			&post.Caption,
 			&post.Facets,
-			&post.CreatedAt,
-			&post.IndexedAt,
-		); err != nil {
-			if err == gocql.ErrNotFound {
-				logger.Warn("post not found", "uri", uri)
-				continue
-			}
-			logger.Error("failed to fetch post", "uri", uri, "err", err)
-			return &vyletdatabase.GetPostsResponse{
-				Error: helpers.ToStringPtr(err.Error()),
-			}, nil
+			&createdAt,
+			&indexedAt,
+		) {
+			break
 		}
 
-		images, err := s.getPostImages(ctx, uri)
+		post.CreatedAt = timestamppb.New(createdAt)
+		post.IndexedAt = timestamppb.New(indexedAt)
+
+		images, err := s.getPostImages(ctx, post.Uri)
 		if err != nil {
-			logger.Warn("failed to fetch images for post", "uri", uri, "err", err)
+			logger.Warn("failed to fetch images for post", "uri", post.Uri, "err", err)
 		} else {
 			post.Images = images
 		}
 
-		posts = append(posts, post)
+		posts[post.Uri] = post
+	}
+
+	if err := iter.Close(); err != nil {
+		logger.Error("failed to iterate posts", "err", err)
+		return &vyletdatabase.GetPostsResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
 	}
 
 	return &vyletdatabase.GetPostsResponse{
@@ -244,29 +272,32 @@ func (s *Server) GetPostsByActor(ctx context.Context, req *vyletdatabase.GetPost
 			ORDER BY created_at DESC, uri ASC
 			LIMIT ?
 		`
-		args = []any{req.Did, req.Limit}
+		args = []any{req.Did, req.Limit + 1}
 	}
 
 	iter := s.cqlSession.Query(query, args...).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var posts []*vyletdatabase.Post
-
+	var postsList []*vyletdatabase.Post
 	for {
 		post := &vyletdatabase.Post{}
+		var createdAt, indexedAt time.Time
+
 		if !iter.Scan(
 			&post.Uri,
 			&post.Cid,
 			&post.AuthorDid,
 			&post.Caption,
 			&post.Facets,
-			&post.CreatedAt,
-			&post.IndexedAt,
+			&createdAt,
+			&indexedAt,
 		) {
 			break
 		}
 
-		posts = append(posts, post)
+		post.CreatedAt = timestamppb.New(createdAt)
+		post.IndexedAt = timestamppb.New(indexedAt)
+		postsList = append(postsList, post)
 	}
 
 	if err := iter.Close(); err != nil {
@@ -277,26 +308,107 @@ func (s *Server) GetPostsByActor(ctx context.Context, req *vyletdatabase.GetPost
 	}
 
 	var nextCursor *string
-	if len(posts) > int(req.Limit) {
-		posts = posts[:req.Limit]
-		lastPost := posts[len(posts)-1]
+	if len(postsList) > int(req.Limit) {
+		postsList = postsList[:req.Limit]
+		lastPost := postsList[len(postsList)-1]
 		cursorStr := fmt.Sprintf("%s|%s",
 			lastPost.CreatedAt.AsTime().Format(time.RFC3339Nano),
 			lastPost.Uri)
 		nextCursor = &cursorStr
 	}
 
-	for _, post := range posts {
+	posts := make(map[string]*vyletdatabase.Post)
+	for _, post := range postsList {
 		images, err := s.getPostImages(ctx, post.Uri)
 		if err != nil {
 			logger.Warn("failed to fetch images for post", "uri", post.Uri, "err", err)
 		} else {
 			post.Images = images
 		}
+		posts[post.Uri] = post
 	}
 
 	return &vyletdatabase.GetPostsByActorResponse{
 		Posts:  posts,
 		Cursor: nextCursor,
+	}, nil
+}
+
+func (s *Server) GetPostInteractionCounts(ctx context.Context, req *vyletdatabase.GetPostInteractionCountsRequest) (*vyletdatabase.GetPostInteractionCountsResponse, error) {
+	logger := s.logger.With("name", "GetPostInteractionCounts", "uri", req.Uri)
+
+	var likeCount, replyCount int64
+
+	query := `
+		SELECT like_count
+		FROM post_interaction_counts
+		WHERE post_uri = ?
+	`
+
+	err := s.cqlSession.Query(query, req.Uri).WithContext(ctx).Scan(&likeCount)
+	if err != nil {
+		if errors.Is(err, gocql.ErrNotFound) {
+			return &vyletdatabase.GetPostInteractionCountsResponse{
+				Counts: &vyletdatabase.PostInteractionCounts{
+					Likes:   0,
+					Replies: 0,
+				},
+			}, nil
+		}
+		logger.Error("failed to fetch interaction counts", "uri", req.Uri, "err", err)
+		return &vyletdatabase.GetPostInteractionCountsResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
+
+	return &vyletdatabase.GetPostInteractionCountsResponse{
+		Counts: &vyletdatabase.PostInteractionCounts{
+			Likes:   likeCount,
+			Replies: replyCount,
+		},
+	}, nil
+}
+
+func (s *Server) GetPostsInteractionCounts(ctx context.Context, req *vyletdatabase.GetPostsInteractionCountsRequest) (*vyletdatabase.GetPostsInteractionCountsResponse, error) {
+	logger := s.logger.With("name", "GetPostsInteractionCounts")
+
+	query := `
+		SELECT post_uri, like_count
+		FROM post_interaction_counts
+		WHERE post_uri IN ?
+	`
+
+	iter := s.cqlSession.Query(query, req.Uris).WithContext(ctx).Iter()
+	defer iter.Close()
+
+	counts := make(map[string]*vyletdatabase.PostInteractionCounts)
+
+	var uri string
+	var likeCount, replyCount int64
+	for iter.Scan(&uri, &likeCount) {
+		counts[uri] = &vyletdatabase.PostInteractionCounts{
+			Likes:   likeCount,
+			Replies: replyCount,
+		}
+	}
+
+	if err := iter.Close(); err != nil {
+		logger.Error("failed to iterate interaction counts", "err", err)
+		return &vyletdatabase.GetPostsInteractionCountsResponse{
+			Error: helpers.ToStringPtr(err.Error()),
+		}, nil
+	}
+
+	for _, uri := range req.Uris {
+		if _, exists := counts[uri]; !exists {
+			counts[uri] = &vyletdatabase.PostInteractionCounts{
+				Likes:   0,
+				Replies: 0,
+			}
+		}
+	}
+
+	return &vyletdatabase.GetPostsInteractionCountsResponse{
+		Counts: counts,
 	}, nil
 }
