@@ -21,7 +21,7 @@ func main() {
 			&cli.StringFlag{
 				Name:    "database-host",
 				Value:   "127.0.0.1:9090",
-				EnvVars: []string{"VYLET_DATABASE_HOST"},
+				EnvVars: []string{"VYLET_INDEXER_DATABASE_HOST", "VYLET_DATABASE_HOST"},
 			},
 			&cli.StringSliceFlag{
 				Name:    "bootstrap-servers",

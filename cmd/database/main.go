@@ -23,12 +23,14 @@ func main() {
 				EnvVars: []string{"VYLET_DATABASE_LISTEN_ADDR"},
 			},
 			&cli.StringSliceFlag{
-				Name:  "cassandra-addrs",
-				Value: cli.NewStringSlice("127.0.0.1"),
+				Name:    "cassandra-addrs",
+				Value:   cli.NewStringSlice("127.0.0.1"),
+				EnvVars: []string{"VYLET_DATABASE_CASSANDRA_ADDRS"},
 			},
 			&cli.StringFlag{
-				Name:  "cassandra-keyspace",
-				Value: "vylet",
+				Name:    "cassandra-keyspace",
+				Value:   "vylet",
+				EnvVars: []string{"VYLET_DATABASE_CASSANDRA_KEYSPACE"},
 			},
 		},
 		Action: run,

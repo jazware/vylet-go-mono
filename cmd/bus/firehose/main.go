@@ -19,21 +19,21 @@ func main() {
 			telemetry.CLIFlagMetricsListenAddress,
 			&cli.StringSliceFlag{
 				Name:    "desired-collections",
-				EnvVars: []string{"KAFKA_FIREHOSE_DESIRED_COLLECTIONS"},
+				EnvVars: []string{"VYLET_FIREHOSE_DESIRED_COLLECTIONS"},
 			},
 			&cli.StringFlag{
 				Name:    "websocket-host",
-				EnvVars: []string{"KAFKA_FIREHOSE_WEBSOCKET_HOST"},
+				EnvVars: []string{"VYLET_FIREHOSE_WEBSOCKET_HOST", "BSKY_RELAY_HOST", "RELAY_HOST"},
 				Value:   "wss://bsky.network",
 			},
 			&cli.StringSliceFlag{
 				Name:    "bootstrap-servers",
-				EnvVars: []string{"KAFKA_FIREHOSE_BOOTSTRAP_SERVERS"},
+				EnvVars: []string{"VYLET_FIREHOSE_BOOTSTRAP_SERVERS", "BOOTSTRAP_SERVERS"},
 				Value:   cli.NewStringSlice("localhost:9092"),
 			},
 			&cli.StringFlag{
 				Name:    "output-topic",
-				EnvVars: []string{"KAFKA_FIREHOSE_OUTPUT_TOPIC"},
+				EnvVars: []string{"VYLET_FIREHOSE_OUTPUT_TOPIC"},
 				Value:   "firehose-events-prod",
 			},
 		},
