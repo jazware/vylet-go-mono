@@ -148,6 +148,9 @@ func (s *Server) registerHandlers() {
 	s.echo.GET("/xrpc/app.vylet.feed.getSubjectLikes", s.handleGetSubjectLikes)
 	s.echo.GET("/xrpc/app.vylet.feed.getActorPosts", s.handleGetActorPosts)
 
+	// app.vylet.media
+	s.echo.GET("/xrpc/app.vylet.media.getBlob", s.handleGetBlob)
+  
 	// SAMPLE
 	s.echo.GET("/xrpc/authed", nil, requireAuth)
 }
