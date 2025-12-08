@@ -129,7 +129,8 @@ func (s *Server) registerHandlers() {
 
 	// app.vylet.feed
 	s.echo.GET("/xrpc/app.vylet.feed.getPosts", s.handleGetPosts)
-	s.echo.GET("/xrpc/app.vylet.feed.getSubjectLikes", s.handleGetLikesBySubject)
+	s.echo.GET("/xrpc/app.vylet.feed.getSubjectLikes", s.handleGetSubjectLikes)
+	s.echo.GET("/xrpc/app.vylet.feed.getActorPosts", s.handleGetActorPosts)
 }
 
 func (s *Server) errorHandler(err error, c echo.Context) {

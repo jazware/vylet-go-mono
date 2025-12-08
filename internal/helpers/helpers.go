@@ -13,6 +13,14 @@ func ToStringPtr(str string) *string {
 	return &str
 }
 
+func ToIntPtr(num int) *int {
+	return &num
+}
+
+func ToInt64Ptr(num int64) *int64 {
+	return &num
+}
+
 func ImageCidToCdnUrl(cid string, size string) string {
 	return fmt.Sprintf("https://cdn.vylet.app/%s/%s@png", cid, size)
 }

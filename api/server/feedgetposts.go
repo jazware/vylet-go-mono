@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/bluesky-social/indigo/lex/util"
@@ -14,10 +16,6 @@ import (
 	"github.com/vylet-app/go/internal/helpers"
 	"golang.org/x/sync/errgroup"
 )
-
-type GetFeedPostsInput struct {
-	Uris []string `query:"uris"`
-}
 
 func (s *Server) getPosts(ctx context.Context, uris []string) (map[string]*vylet.FeedPost, error) {
 	resp, err := s.client.Post.GetPosts(ctx, &vyletdatabase.GetPostsRequest{
@@ -82,8 +80,6 @@ func (s *Server) getPosts(ctx context.Context, uris []string) (map[string]*vylet
 }
 
 func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string) (map[string]*vylet.FeedDefs_PostView, error) {
-	logger := s.logger.With("name", "feedPostsToPostViews")
-
 	resp, err := s.client.Post.GetPosts(ctx, &vyletdatabase.GetPostsRequest{
 		Uris: uris,
 	})
@@ -94,9 +90,23 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 		return nil, ErrDatabaseNotFound
 	}
 
-	dids := make([]string, 0, len(resp.Posts))
+	feedPostViews, err := s.postsToPostViews(ctx, resp.Posts, viewer)
+	if err != nil {
+		return nil, err
+	}
+
+	return feedPostViews, nil
+}
+
+func (s *Server) postsToPostViews(ctx context.Context, posts map[string]*vyletdatabase.Post, viewer string) (map[string]*vylet.FeedDefs_PostView, error) {
+	logger := s.logger.With("name", "postsToPostViews")
+
+	uris := make([]string, 0, len(posts))
+	dids := make([]string, 0, len(posts))
 	addedDids := make(map[string]struct{})
-	for _, post := range resp.Posts {
+	for uri, post := range posts {
+		uris = append(uris, uri)
+
 		if _, ok := addedDids[post.AuthorDid]; ok {
 			continue
 		}
@@ -131,7 +141,7 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 	}
 
 	feedPostViews := make(map[string]*vylet.FeedDefs_PostView)
-	for _, post := range resp.Posts {
+	for _, post := range posts {
 		profileBasic, ok := profiles[post.AuthorDid]
 		if !ok {
 			logger.Warn("failed to get profile for post", "did", post.AuthorDid, "uri", post.Uri)
@@ -197,6 +207,10 @@ func (s *Server) getPostViews(ctx context.Context, uris []string, viewer string)
 	return feedPostViews, nil
 }
 
+type GetFeedPostsInput struct {
+	Uris []string `query:"uris"`
+}
+
 func (s *Server) handleGetPosts(e echo.Context) error {
 	ctx := e.Request().Context()
 
@@ -243,5 +257,69 @@ func (s *Server) handleGetPosts(e echo.Context) error {
 
 	return e.JSON(200, vylet.FeedGetPosts_Output{
 		Posts: orderedPostViews,
+	})
+}
+
+type GetFeedActorPostsInput struct {
+	Actor  string  `query:"actor"`
+	Limit  *int64  `query:"limit"`
+	Cursor *string `query:"cursor"`
+}
+
+func (s *Server) handleGetActorPosts(e echo.Context) error {
+	ctx := e.Request().Context()
+
+	logger := s.logger.With("name", "handleGetActorPosts")
+
+	var input GetFeedActorPostsInput
+	if err := e.Bind(&input); err != nil {
+		logger.Error("failed to bind", "err", err)
+		return ErrInternalServerErr
+	}
+
+	if input.Limit != nil && (*input.Limit < 1 || *input.Limit > 100) {
+		return NewValidationError("limit", "limit must be between 1 and 100")
+	} else if input.Limit == nil {
+		input.Limit = helpers.ToInt64Ptr(25)
+	}
+
+	logger = logger.With("actor", input.Actor, "limit", *input.Limit, "cursor", input.Cursor)
+
+	did, _, err := s.fetchDidHandleFromActor(ctx, input.Actor)
+	if err != nil {
+		if errors.Is(err, ErrActorNotValid) {
+			return NewValidationError("actor", "actor must be a valid DID or handle")
+		}
+		logger.Error("error fetching did and handle", "err", err)
+		return ErrInternalServerErr
+	}
+
+	resp, err := s.client.Post.GetPostsByActor(ctx, &vyletdatabase.GetPostsByActorRequest{
+		Did:    did,
+		Limit:  *input.Limit,
+		Cursor: input.Cursor,
+	})
+	if err != nil {
+		logger.Error("failed to get posts", "did", did)
+		return ErrInternalServerErr
+	}
+
+	postViews, err := s.postsToPostViews(ctx, resp.Posts, "") // TODO: set viewer
+	if err != nil {
+		s.logger.Error("failed to get post views", "err", err)
+		return ErrInternalServerErr
+	}
+
+	sortedPostViews := make([]*vylet.FeedDefs_PostView, 0, len(postViews))
+	for _, postView := range postViews {
+		sortedPostViews = append(sortedPostViews, postView)
+	}
+	sort.Slice(sortedPostViews, func(i, j int) bool {
+		return sortedPostViews[i].CreatedAt > sortedPostViews[j].CreatedAt
+	})
+
+	return e.JSON(200, vylet.FeedGetActorPosts_Output{
+		Posts:  sortedPostViews,
+		Cursor: resp.Cursor,
 	})
 }
