@@ -18,12 +18,12 @@ type Server interface {
 	ActorGetProfileRequiresAuth() bool
 	HandleActorGetProfiles(e echo.Context, input *ActorGetProfilesInput) (*vylet.ActorGetProfiles_Output, *echo.HTTPError)
 	ActorGetProfilesRequiresAuth() bool
+	HandleFeedGetActorPosts(e echo.Context, input *FeedGetActorPostsInput) (*vylet.FeedGetActorPosts_Output, *echo.HTTPError)
+	FeedGetActorPostsRequiresAuth() bool
 	HandleFeedGetPosts(e echo.Context, input *FeedGetPostsInput) (*vylet.FeedGetPosts_Output, *echo.HTTPError)
 	FeedGetPostsRequiresAuth() bool
 	HandleFeedGetSubjectLikes(e echo.Context, input *FeedGetSubjectLikesInput) (*vylet.FeedGetSubjectLikes_Output, *echo.HTTPError)
 	FeedGetSubjectLikesRequiresAuth() bool
-	HandleFeedGetActorPosts(e echo.Context, input *FeedGetActorPostsInput) (*vylet.FeedGetActorPosts_Output, *echo.HTTPError)
-	FeedGetActorPostsRequiresAuth() bool
 }
 
 type Handlers struct {
