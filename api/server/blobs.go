@@ -93,7 +93,7 @@ func (s *Server) getPdsEndpoint(ctx context.Context, did string) (string, error)
 		return "", fmt.Errorf("failed to fetch DID document: %w", err)
 	}
 
-	serviceEndpoint := doc.GetServiceEndpoint("#atproto_pds")
+	serviceEndpoint := doc.GetServiceEndpoint("atproto_pds")
 	if serviceEndpoint == "" {
 		return "", fmt.Errorf("no PDS endpoing found in DID document")
 	}
