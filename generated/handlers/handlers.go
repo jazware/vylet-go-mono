@@ -37,6 +37,7 @@ func RegisterHandlers(e *echo.Echo, s Server) {
 
 	e.GET("/xrpc/app.vylet.actor.getProfile", h.HandleActorGetProfile, CreateAuthRequiredMiddleware(s.ActorGetProfileRequiresAuth()))
 	e.GET("/xrpc/app.vylet.actor.getProfiles", h.HandleActorGetProfiles, CreateAuthRequiredMiddleware(s.ActorGetProfilesRequiresAuth()))
+	e.GET("/xrpc/app.vylet.feed.getActorPosts", h.HandleFeedGetActorPosts, CreateAuthRequiredMiddleware(s.FeedGetActorPostsRequiresAuth()))
 	e.GET("/xrpc/app.vylet.feed.getPosts", h.HandleFeedGetPosts, CreateAuthRequiredMiddleware(s.FeedGetPostsRequiresAuth()))
 	e.GET("/xrpc/app.vylet.feed.getSubjectLikes", h.HandleFeedGetSubjectLikes, CreateAuthRequiredMiddleware(s.FeedGetSubjectLikesRequiresAuth()))
 }
